@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const age = now - hit.fetchedAt;
     if (age >= CACHE_TTL * 0.85 && age < CACHE_TTL && !refreshing.has(cacheKey)) {
       refreshing.add(cacheKey);
-      fetchAll(pts)
+      fetchAll(cacheKey)
         .then(data => cache.set(cacheKey, { data, fetchedAt: Date.now() }))
         .catch(err => console.error('[cloud] background refresh failed:', err))
         .finally(() => refreshing.delete(cacheKey));
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const data = await fetchAll(pts);
+    const data = await fetchAll(cacheKey);
     cache.set(cacheKey, { data, fetchedAt: now });
     return NextResponse.json(data, { headers: { 'Cache-Control': CACHE_HEADER } });
   } catch (err) {
@@ -52,6 +52,7 @@ async function fetchAll(pts: string): Promise<Record<string, number | null>> {
 
       const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=cloud_cover&forecast_days=1`;
       const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(6000) });
+      if (!res.ok) throw new Error(`Open-Meteo ${res.status} for ${pair}`);
       const json = await res.json();
       const value: number | null =
         typeof json?.current?.cloud_cover === 'number' ? json.current.cloud_cover : null;
