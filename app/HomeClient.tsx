@@ -171,6 +171,7 @@ export default function HomeClient({ isMock }: { isMock: boolean }) {
         <GlobeScene
           auroraData={data?.coordinates ?? []}
           selectedSite={selectedSite}
+          ipLocation={ipLocation}
         />
       </div>
     </main>
