@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#02060d"/>
+
+  <!-- Stars -->
+  <circle cx="4"  cy="5"  r="0.6"  fill="rgba(255,255,255,0.55)"/>
+  <circle cx="13" cy="3"  r="0.5"  fill="rgba(255,255,255,0.45)"/>
+  <circle cx="22" cy="4"  r="0.55" fill="rgba(255,255,255,0.4)"/>
+  <circle cx="29" cy="8"  r="0.45" fill="rgba(255,255,255,0.5)"/>
+  <circle cx="7"  cy="10" r="0.4"  fill="rgba(255,255,255,0.35)"/>
+  <circle cx="27" cy="14" r="0.35" fill="rgba(255,255,255,0.3)"/>
+  <circle cx="18" cy="6"  r="0.4"  fill="rgba(255,255,255,0.38)"/>
+
+  <!-- Aurora glow halo -->
+  <path d="M1 21 C6 13,12 9,16 9 C20 9,26 13,31 19"
+        stroke="#3dffa0" stroke-width="5" fill="none"
+        stroke-linecap="round" opacity="0.08"/>
+
+  <!-- Aurora main arc -->
+  <path d="M1 21 C6 13,12 9,16 9 C20 9,26 13,31 19"
+        stroke="url(#g1)" stroke-width="2" fill="none"
+        stroke-linecap="round"/>
+
+  <!-- Aurora secondary arc -->
+  <path d="M2 25 C7 17,12 14,16 14 C20 14,26 18,31 24"
+        stroke="url(#g2)" stroke-width="1.2" fill="none"
+        stroke-linecap="round" opacity="0.55"/>
+
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#3dffa0"/>
+      <stop offset="48%"  stop-color="#00e8cc"/>
+      <stop offset="100%" stop-color="#5b8fff"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#3dffa0" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#5b8fff" stop-opacity="0.4"/>
+    </linearGradient>
+  </defs>
+</svg>

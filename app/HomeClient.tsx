@@ -157,7 +157,7 @@ export default function HomeClient({ isMock }: { isMock: boolean }) {
   }, [isMock, data, ipLocation]);
 
   return (
-    <main className="relative w-screen h-screen overflow-hidden" style={{ background: '#02060d' }}>
+    <main className="relative w-screen overflow-hidden" style={{ background: '#02060d', height: '100dvh' }}>
       <Header kp={data?.kp ?? null} updatedAt={data?.fetchedAt ?? null} />
       <div className="flex w-full h-full">
         <Sidebar
@@ -172,6 +172,7 @@ export default function HomeClient({ isMock }: { isMock: boolean }) {
           auroraData={data?.coordinates ?? []}
           selectedSite={selectedSite}
           ipLocation={ipLocation}
+          kp={data?.kp ?? null}
         />
       </div>
     </main>

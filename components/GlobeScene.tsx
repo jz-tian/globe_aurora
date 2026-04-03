@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import type { AuroraPoint } from './utils/noaa';
 import { createAuroraMesh } from './AuroraShader';
 import { createDayNightMesh } from './DayNightShader';
-import { createStarField } from './StarField';
+import { createStarField, disposeStarField } from './StarField';
 import { getSunDirection } from './utils/sunPosition';
 
 const GLOBE_RADIUS = 100;
@@ -48,13 +48,15 @@ interface Props {
   auroraData: AuroraPoint[];
   selectedSite: { lat: number; lon: number } | null;
   ipLocation: { lat: number; lon: number; city: string; country: string } | null;
+  kp: number | null;
 }
 
-export default function GlobeScene({ auroraData, selectedSite, ipLocation }: Props) {
+export default function GlobeScene({ auroraData, selectedSite, ipLocation, kp }: Props) {
   const globeMaterial = useMemo(() => buildGlobeMaterial(), []);
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const auroraMeshRef = useRef<THREE.Mesh | null>(null);
   const dayNightMeshRef = useRef<THREE.Mesh | null>(null);
+  const starFieldRef = useRef<THREE.Points | null>(null);
   const rafRef = useRef<number | null>(null);
   const tickRef = useRef<(() => void) | null>(null);
   const pendingSiteRef = useRef<{ lat: number; lon: number } | null>(null);
@@ -69,13 +71,26 @@ export default function GlobeScene({ auroraData, selectedSite, ipLocation }: Pro
     return { maxIntensity: max, northMax: nm, southMax: sm };
   }, [auroraData]);
 
+  const kpScale = kp !== null ? Math.min(1, Math.max(0.08, kp / 7)) : 1;
+
   useEffect(() => {
     if (!auroraMeshRef.current) return;
     const uniforms = (auroraMeshRef.current.material as THREE.ShaderMaterial).uniforms;
-    uniforms.uIntensityScale.value = maxIntensity / 100;
-    uniforms.uNorthActive.value = northMax / 100;
-    uniforms.uSouthActive.value = southMax / 100;
-  }, [maxIntensity, northMax, southMax]);
+    uniforms.uIntensityScale.value = (maxIntensity / 100) * kpScale;
+    uniforms.uNorthActive.value = (northMax / 100) * kpScale;
+    uniforms.uSouthActive.value = (southMax / 100) * kpScale;
+  }, [maxIntensity, northMax, southMax, kpScale]);
+
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 768
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  const siteAltitude = isMobile ? 2.5 : 1.5;
 
   useEffect(() => {
     if (!selectedSite) return;
@@ -84,10 +99,10 @@ export default function GlobeScene({ auroraData, selectedSite, ipLocation }: Pro
       return;
     }
     globeRef.current.pointOfView(
-      { lat: selectedSite.lat, lng: selectedSite.lon, altitude: 1.5 },
+      { lat: selectedSite.lat, lng: selectedSite.lon, altitude: siteAltitude },
       1500
     );
-  }, [selectedSite]);
+  }, [selectedSite, siteAltitude]);
 
   const startAnimation = useCallback(() => {
     // Update sun direction at most once per second — it doesn't move perceptibly faster
@@ -131,7 +146,8 @@ export default function GlobeScene({ auroraData, selectedSite, ipLocation }: Pro
 
     const scene = globeRef.current.scene();
 
-    scene.add(createStarField());
+    starFieldRef.current = createStarField();
+    scene.add(starFieldRef.current);
 
     const dayNight = createDayNightMesh(GLOBE_RADIUS);
     scene.add(dayNight);
@@ -143,17 +159,20 @@ export default function GlobeScene({ auroraData, selectedSite, ipLocation }: Pro
 
     if (maxIntensity > 0) {
       const uniforms = (aurora.material as THREE.ShaderMaterial).uniforms;
-      uniforms.uIntensityScale.value = maxIntensity / 100;
-      uniforms.uNorthActive.value = northMax / 100;
-      uniforms.uSouthActive.value = southMax / 100;
+      uniforms.uIntensityScale.value = (maxIntensity / 100) * kpScale;
+      uniforms.uNorthActive.value = (northMax / 100) * kpScale;
+      uniforms.uSouthActive.value = (southMax / 100) * kpScale;
     }
 
     if (pendingSiteRef.current) {
       globeRef.current.pointOfView(
-        { lat: pendingSiteRef.current.lat, lng: pendingSiteRef.current.lon, altitude: 1.5 },
+        { lat: pendingSiteRef.current.lat, lng: pendingSiteRef.current.lon, altitude: siteAltitude },
         0
       );
       pendingSiteRef.current = null;
+    } else if (isMobile) {
+      // No site yet on mobile — show full globe centred on the equator
+      globeRef.current.pointOfView({ lat: 20, lng: 0, altitude: 2.8 }, 0);
     }
 
     // Slow auto-rotation when not interacting
@@ -165,7 +184,7 @@ export default function GlobeScene({ auroraData, selectedSite, ipLocation }: Pro
     controls.autoRotateSpeed = 0.35;
 
     startAnimation();
-  }, [startAnimation, maxIntensity, northMax, southMax, globeMaterial]);
+  }, [startAnimation, maxIntensity, northMax, southMax, globeMaterial, isMobile, siteAltitude]);
 
   useEffect(() => {
     return () => {
@@ -178,6 +197,7 @@ export default function GlobeScene({ auroraData, selectedSite, ipLocation }: Pro
         dayNightMeshRef.current.geometry.dispose();
         (dayNightMeshRef.current.material as THREE.Material).dispose();
       }
+      disposeStarField();
     };
   }, []);
 
@@ -198,13 +218,16 @@ export default function GlobeScene({ auroraData, selectedSite, ipLocation }: Pro
   }, []);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
+  // null until ResizeObserver fires — prevents the Globe from rendering with
+  // a wrong initial size (e.g. 1200 px on a 375 px mobile screen) which
+  // would shift the globe sphere off-center in the canvas.
+  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver(entries => {
       const { width, height } = entries[0].contentRect;
-      setDimensions({ width, height });
+      if (width > 0 && height > 0) setDimensions({ width, height });
     });
     observer.observe(containerRef.current);
     return () => observer.disconnect();
@@ -235,7 +258,7 @@ export default function GlobeScene({ auroraData, selectedSite, ipLocation }: Pro
       Math.abs(site.lon - ipLocation.lon) < 0.01;
 
     if (ipLocation) {
-      points.push({ lat: ipLocation.lat, lon: ipLocation.lon, color: '#7dd3fc', radius: 0.4 });
+      points.push({ lat: ipLocation.lat, lon: ipLocation.lon, color: '#7dd3fc', radius: 0.7 });
       labels.push({
         lat: ipLocation.lat,
         lon: ipLocation.lon,
@@ -245,7 +268,7 @@ export default function GlobeScene({ auroraData, selectedSite, ipLocation }: Pro
     }
 
     if (selectedSite && !sameAsIp(selectedSite)) {
-      points.push({ lat: selectedSite.lat, lon: selectedSite.lon, color: '#3dffa0', radius: 0.35 });
+      points.push({ lat: selectedSite.lat, lon: selectedSite.lon, color: '#3dffa0', radius: 0.6 });
     }
 
     return { pinPoints: points, pinLabels: labels };
@@ -253,7 +276,7 @@ export default function GlobeScene({ auroraData, selectedSite, ipLocation }: Pro
 
   return (
     <div ref={containerRef} className="flex-1" style={{ height: '100%' }}>
-      <Globe
+      {dimensions && <Globe
         ref={globeRef}
         width={dimensions.width}
         height={dimensions.height}
@@ -274,18 +297,18 @@ export default function GlobeScene({ auroraData, selectedSite, ipLocation }: Pro
         pointLng={(d: object) => (d as { lon: number }).lon}
         pointColor={(d: object) => (d as { color: string }).color}
         pointRadius={(d: object) => (d as { radius: number }).radius}
-        pointAltitude={0.01}
+        pointAltitude={0.015}
         pointsMerge={false}
         labelsData={pinLabels}
         labelLat={(d: object) => (d as { lat: number }).lat}
         labelLng={(d: object) => (d as { lon: number }).lon}
         labelText={(d: object) => (d as { text: string }).text}
         labelColor={(d: object) => (d as { color: string }).color}
-        labelSize={0.45}
+        labelSize={0.9}
         labelDotRadius={0}
-        labelAltitude={0.015}
+        labelAltitude={0.1}
         labelResolution={2}
-      />
+      />}
     </div>
   );
 }

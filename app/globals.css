@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+:root {
+  --c-border:     rgba(255, 255, 255, 0.055);
+  --c-border-2:   rgba(255, 255, 255, 0.028);
+  --c-fg:         rgba(255, 255, 255, 0.82);
+  --c-dim:        rgba(255, 255, 255, 0.28);
+  --c-muted:      rgba(255, 255, 255, 0.12);
+  --c-ghost:      rgba(255, 255, 255, 0.06);
+  --c-aurora:     #3dffa0;
+  --c-sidebar-bg: rgba(2, 6, 12, 0.74);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -10,12 +21,150 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #000;
+  /* Slightly blue-black — gives the globe more depth than pure #000 */
+  background: #02060d;
 }
 
-canvas {
-  display: block;
-}
+canvas { display: block; }
 
-/* Hide scrollbar in sidebar */
 ::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+/* On mobile the Globe sits behind the bottom sheet — give it breathing room */
+@media (max-width: 767px) {
+  .globe-wrapper {
+    padding-bottom: 64px;
+  }
+}
+
+/* ── Header wordmark responsive positioning ────────────────────── */
+/* Mobile: left-align after a small gutter (no sidebar on mobile) */
+.header-wordmark {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  top: 16px;
+  left: 16px;
+}
+
+/* Desktop: offset past the sidebar width */
+@media (min-width: 768px) {
+  .header-wordmark {
+    top: 22px;
+    left: 276px;
+  }
+}
+
+/* ── Header KP cluster top offset ──────────────────────────────── */
+.header-kp-cluster {
+  top: 14px;
+}
+
+@media (min-width: 768px) {
+  .header-kp-cluster {
+    top: 18px;
+  }
+}
+
+/* ── Live indicator dot ────────────────────────────────────────── */
+@keyframes pulse-live {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 5px 1px var(--c-aurora);
+  }
+  50% {
+    opacity: 0.3;
+    box-shadow: none;
+  }
+}
+
+.live-dot {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--c-aurora);
+  animation: pulse-live 2.6s ease-in-out infinite;
+  flex-shrink: 0;
+  will-change: opacity, box-shadow;
+}
+
+/* ── Intensity bar fill animation ──────────────────────────────── */
+@keyframes bar-grow {
+  from { width: 0; }
+}
+
+.intensity-bar-fill {
+  animation: bar-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: width;
+}
+
+/* ── Tooltip ───────────────────────────────────────────────────── */
+[data-tip] {
+  position: relative;
+  cursor: default;
+  pointer-events: auto;
+}
+
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  z-index: 999;
+  bottom: calc(100% + 8px);
+  right: 0;
+  padding: 5px 9px;
+  background: rgba(3, 8, 20, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 3px;
+  font-family: var(--font-mono), monospace;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.6;
+  max-width: 240px;
+  white-space: normal;
+  word-break: keep-all;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+[data-tip]:hover::after {
+  opacity: 1;
+}
+
+/* Tooltip appears below the element */
+[data-tip][data-tip-dir="below"]::after {
+  bottom: auto;
+  top: calc(100% + 8px);
+}
+
+/* Tooltip anchored to left edge instead of right */
+[data-tip][data-tip-align="left"]::after {
+  right: auto;
+  left: 0;
+}
+
+/* ── IP location dot ───────────────────────────────────────────── */
+@keyframes ping-loc {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 6px 1px #7dd3fc;
+  }
+  50% {
+    opacity: 0.35;
+    box-shadow: none;
+  }
+}
+
+.loc-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #7dd3fc;
+  animation: ping-loc 3.2s ease-in-out infinite;
+  flex-shrink: 0;
+  will-change: opacity, box-shadow;
+}
