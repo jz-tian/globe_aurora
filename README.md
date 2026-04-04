@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Aurora
 
-## Getting Started
+A real-time aurora borealis tracker with an interactive 3D globe. Live at **[globe-aurora-live.vercel.app](https://globe-aurora-live.vercel.app)**.
 
-First, run the development server:
+> **Demo below is recorded in mock mode** (Kp 8.3), simulating an exceptionally strong geomagnetic storm. Real-world aurora activity is typically much quieter.
+
+![Aurora demo](public/demo.gif)
+
+---
+
+## Features
+
+### Globe
+- Interactive 3D Earth rendered with Three.js — rotate, zoom, drag
+- Custom GLSL aurora shader at 1.15× globe radius, animated in real time
+- Day/night terminator overlay calculated from the actual sun position
+- Procedural star field
+- Auto-rotation when idle; pauses when the tab is hidden to save GPU
+
+### Sidebar
+- IP geolocation on load — detects your city and pans the globe to your location
+- **Top 10 aurora viewing sites** — ranked by real-time OVATION intensity, mapped to the nearest named city
+- **Visibility forecast** for your latitude based on NOAA's Kp oval model (Visible / Possibly Visible / Unlikely)
+- **Cloud cover** for each site fetched from Open-Meteo, updated hourly
+- **48-hour Kp forecast sparkline** with observed vs. predicted data, storm threshold marker, and upcoming peak callout
+
+### Data
+- Aurora oval: [NOAA SWPC OVATION](https://www.swpc.noaa.gov/) — refreshed every 30 minutes with stale-while-revalidate caching
+- Kp index & forecast: NOAA SWPC planetary K-index — refreshed hourly
+- Cloud cover: [Open-Meteo](https://open-meteo.com/) — refreshed hourly
+
+---
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Runtime | React 19 |
+| 3D / WebGL | Three.js, react-globe.gl |
+| Aurora shader | Custom GLSL (vertex + fragment) |
+| Styling | Tailwind CSS v4 |
+| Data sources | NOAA SWPC, Open-Meteo |
+| Deployment | Vercel |
+
+---
+
+## Running Locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+To simulate strong aurora activity (useful for development):
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+http://localhost:3000/?mock=1
+```
