@@ -4,7 +4,7 @@ A real-time aurora borealis tracker with an interactive 3D globe. Live at **[glo
 
 > **Demo below is recorded in mock mode** (Kp 8.3), simulating an exceptionally strong geomagnetic storm. Real-world aurora activity is typically much quieter.
 
-![Aurora demo](public/demo.gif)
+![Aurora demo](public/demo2.gif)
 
 ---
 
