@@ -47,6 +47,21 @@ async function fetchIpLocation(): Promise<IpLocation | null> {
   return null;
 }
 
+function buildMockForecast(): ForecastPoint[] {
+  const now = Date.now();
+  const interval = 3 * 3_600_000; // 3-hour intervals
+  const pts: ForecastPoint[] = [];
+  // 6 hours of observed history + 42 hours of forecast = 48h window
+  for (let i = -2; i <= 14; i++) {
+    const t = now + i * interval;
+    // gentle wave with a moderate storm peak around +12h
+    const h = i * 3;
+    const kp = 2 + 1.5 * Math.sin((h / 48) * Math.PI * 2) + (h > 6 && h < 18 ? 2.8 : 0) + Math.random() * 0.3;
+    pts.push({ time: t, kp: Math.min(9, Math.max(0, +kp.toFixed(2))), observed: i <= 0 });
+  }
+  return pts;
+}
+
 function buildMockData(): AuroraApiResponse {
   const points: AuroraPoint[] = [];
   for (let lon = -180; lon < 180; lon += 3) {
@@ -98,6 +113,7 @@ export default function HomeClient({ isMock }: { isMock: boolean }) {
   useEffect(() => {
     if (isMock) {
       setData(buildMockData());
+      setForecast(buildMockForecast());
       return;
     }
     const load = async () => {

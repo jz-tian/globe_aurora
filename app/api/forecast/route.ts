@@ -47,12 +47,24 @@ async function fetchForecast(): Promise<ForecastPoint[]> {
     cache: 'no-store',
     signal: AbortSignal.timeout(8000),
   });
-  const json = (await res.json()) as string[][];
+  const json = await res.json();
 
-  return json
-    .slice(1) // skip header row
+  // NOAA returns an array of objects: { time_tag, kp, observed, noaa_scale }
+  if (Array.isArray(json) && json.length > 0 && typeof json[0] === 'object' && 'kp' in json[0]) {
+    return (json as { time_tag: string; kp: number; observed: string | null }[])
+      .map(({ time_tag, kp, observed }) => ({
+        time: new Date(time_tag).getTime(),
+        kp,
+        observed: observed === 'observed',
+      }))
+      .filter(p => !isNaN(p.kp) && !isNaN(p.time));
+  }
+
+  // Legacy fallback: 2D array format [["time_tag","Kp","Predicted"], ...]
+  return (json as string[][])
+    .slice(1)
     .map(([timeTag, kpStr, observed]) => ({
-      time: new Date(timeTag.includes('Z') ? timeTag : timeTag + ' UTC').getTime(),
+      time: new Date(timeTag.replace(' ', 'T') + 'Z').getTime(),
       kp: parseFloat(kpStr),
       observed: observed === 'observed',
     }))

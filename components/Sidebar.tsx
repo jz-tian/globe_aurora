@@ -481,14 +481,21 @@ export default function Sidebar({ auroraData, onSelectSite, ipLocation, kp, fore
       </div>
 
       {/* Forecast */}
-      {forecast.length > 0 && (
-        <>
-          <Divider />
-          <div style={{ padding: '14px 20px', flexShrink: 0 }}>
-            <ForecastSparkline data={forecast} />
+      <Divider />
+      <div style={{ padding: '14px 20px', flexShrink: 0 }}>
+        {forecast.length > 0 ? (
+          <ForecastSparkline data={forecast} />
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ ...mono, fontSize: 8, letterSpacing: '0.18em', color: 'rgba(255,255,255,0.38)' }}>
+              KP FORECAST
+            </span>
+            <span style={{ ...mono, fontSize: 8, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.15)' }}>
+              loading…
+            </span>
           </div>
-        </>
-      )}
+        )}
+      </div>
 
       {/* Footer */}
       <Divider />
